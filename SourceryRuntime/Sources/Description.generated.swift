@@ -137,7 +137,8 @@ extension Method {
         string += "isFailableInitializer = \(String(describing: self.isFailableInitializer)), "
         string += "annotations = \(String(describing: self.annotations)), "
         string += "definedInTypeName = \(String(describing: self.definedInTypeName)), "
-        string += "attributes = \(String(describing: self.attributes))"
+        string += "attributes = \(String(describing: self.attributes)), "
+        string += "body = \(String(describing: self.body))"
         return string
     }
 }

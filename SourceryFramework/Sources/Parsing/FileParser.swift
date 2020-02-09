@@ -526,10 +526,12 @@ extension FileParser {
         var returnTypeName: String = "Void"
         var `throws` = false
         var `rethrows` = false
+        var body: String?
 
         var nameSuffix: String?
         // if declaration has body then get everything up to body start
         if source.keys.contains(SwiftDocKey.bodyOffset.rawValue) {
+            body = extract(.body, from: source)
             if let suffix = extract(.nameSuffixUpToBody, from: source) {
                 nameSuffix = suffix.trimmingCharacters(in: .whitespacesAndNewlines)
             } else {
@@ -592,7 +594,7 @@ extension FileParser {
         }
 
         let definedInTypeName  = definedIn.map { TypeName($0.name) }
-        let method = Method(name: fullName, selectorName: name.trimmingSuffix("()"), returnTypeName: TypeName(returnTypeName), throws: `throws`, rethrows: `rethrows`, accessLevel: accessibility, isStatic: isStatic, isClass: isClass, isFailableInitializer: isFailableInitializer, attributes: parseDeclarationAttributes(source), annotations: annotations.from(source), definedInTypeName: definedInTypeName)
+        let method = Method(name: fullName, selectorName: name.trimmingSuffix("()"), returnTypeName: TypeName(returnTypeName), throws: `throws`, rethrows: `rethrows`, accessLevel: accessibility, isStatic: isStatic, isClass: isClass, isFailableInitializer: isFailableInitializer, attributes: parseDeclarationAttributes(source), annotations: annotations.from(source), definedInTypeName: definedInTypeName, body: body)
         method.setSource(source)
 
         return method

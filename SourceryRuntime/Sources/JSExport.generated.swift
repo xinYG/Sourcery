@@ -18,6 +18,7 @@ extension ArrayType: ArrayTypeAutoJSExport {}
     var externalName: String? { get }
     var typeName: TypeName { get }
     var type: Type? { get }
+    var defaultValue: String? { get }
     var annotations: [String: NSObject] { get }
     var isOptional: Bool { get }
     var isImplicitlyUnwrappedOptional: Bool { get }
@@ -201,6 +202,7 @@ extension GenericTypeParameter: GenericTypeParameterAutoJSExport {}
     var actualDefinedInTypeName: TypeName? { get }
     var definedInType: Type? { get }
     var attributes: [String: Attribute] { get }
+    var body: String { get }
 }
 
 extension Method: MethodAutoJSExport {}

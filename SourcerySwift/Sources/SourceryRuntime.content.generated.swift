@@ -566,7 +566,8 @@ extension Method {
         string += "isFailableInitializer = \\(String(describing: self.isFailableInitializer)), "
         string += "annotations = \\(String(describing: self.annotations)), "
         string += "definedInTypeName = \\(String(describing: self.definedInTypeName)), "
-        string += "attributes = \\(String(describing: self.attributes))"
+        string += "attributes = \\(String(describing: self.attributes)), "
+        string += "body = \\(String(describing: self.body))"
         return string
     }
 }
@@ -907,6 +908,7 @@ extension Method: Diffable {
         results.append(contentsOf: DiffableResult(identifier: "annotations").trackDifference(actual: self.annotations, expected: castObject.annotations))
         results.append(contentsOf: DiffableResult(identifier: "definedInTypeName").trackDifference(actual: self.definedInTypeName, expected: castObject.definedInTypeName))
         results.append(contentsOf: DiffableResult(identifier: "attributes").trackDifference(actual: self.attributes, expected: castObject.attributes))
+        results.append(contentsOf: DiffableResult(identifier: "body").trackDifference(actual: self.body, expected: castObject.body))
         return results
     }
 }
@@ -1666,6 +1668,7 @@ extension Method {
         if self.annotations != rhs.annotations { return false }
         if self.definedInTypeName != rhs.definedInTypeName { return false }
         if self.attributes != rhs.attributes { return false }
+        if self.body != rhs.body { return false }
         return true
     }
 }
@@ -2094,6 +2097,7 @@ extension ArrayType: ArrayTypeAutoJSExport {}
     var externalName: String? { get }
     var typeName: TypeName { get }
     var type: Type? { get }
+    var defaultValue: String? { get }
     var annotations: [String: NSObject] { get }
     var isOptional: Bool { get }
     var isImplicitlyUnwrappedOptional: Bool { get }
@@ -2277,6 +2281,7 @@ extension GenericTypeParameter: GenericTypeParameterAutoJSExport {}
     var actualDefinedInTypeName: TypeName? { get }
     var definedInType: Type? { get }
     var attributes: [String: Attribute] { get }
+    var body: String { get }
 }
 
 extension Method: MethodAutoJSExport {}
@@ -2804,6 +2809,8 @@ public typealias SourceryMethod = Method
 
     /// Method attributes, i.e. `@discardableResult`
     public let attributes: [String: Attribute]
+    
+    public let body: String?
 
     // Underlying parser data, never to be used by anything else
     // sourcery: skipEquality, skipDescription, skipCoding, skipJSExport
@@ -2823,7 +2830,8 @@ public typealias SourceryMethod = Method
                 isFailableInitializer: Bool = false,
                 attributes: [String: Attribute] = [:],
                 annotations: [String: NSObject] = [:],
-                definedInTypeName: TypeName? = nil) {
+                definedInTypeName: TypeName? = nil,
+                body: String? = nil) {
 
         self.name = name
         self.selectorName = selectorName ?? name
@@ -2838,6 +2846,7 @@ public typealias SourceryMethod = Method
         self.attributes = attributes
         self.annotations = annotations
         self.definedInTypeName = definedInTypeName
+        self.body = body
     }
 
 // sourcery:inline:Method.AutoCoding
@@ -2858,6 +2867,7 @@ public typealias SourceryMethod = Method
             self.definedInTypeName = aDecoder.decode(forKey: "definedInTypeName")
             self.definedInType = aDecoder.decode(forKey: "definedInType")
             guard let attributes: [String: Attribute] = aDecoder.decode(forKey: "attributes") else { NSException.raise(NSExceptionName.parseErrorException, format: "Key '%@' not found.", arguments: getVaList(["attributes"])); fatalError() }; self.attributes = attributes
+            guard let body: String = aDecoder.decode(forKey: "body") else { NSException.raise(NSExceptionName.parseErrorException, format: "Key '%@' not found.", arguments: getVaList(["body"])); fatalError() }; self.body = body
         }
 
         /// :nodoc:
@@ -2877,6 +2887,7 @@ public typealias SourceryMethod = Method
             aCoder.encode(self.definedInTypeName, forKey: "definedInTypeName")
             aCoder.encode(self.definedInType, forKey: "definedInType")
             aCoder.encode(self.attributes, forKey: "attributes")
+            aCoder.encode(self.body, forKey: "body")
         }
 // sourcery:end
 }

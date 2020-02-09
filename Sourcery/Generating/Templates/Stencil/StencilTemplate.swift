@@ -79,7 +79,7 @@ final class StencilTemplate: StencilSwiftKit.StencilSwiftTemplate, SourceryFrame
         ext.registerFilter("reversed", filter: reversed)
         ext.registerFilter("toArray", filter: toArray)
 
-        ext.registerFilterWithArguments("sorted") { (array, propertyName: String) -> Any? in
+        ext.registerFilterWithArgument("sorted") { (array, propertyName: String) -> Any? in
             switch array {
             case let array as NSArray:
                 let sortDescriptor = NSSortDescriptor(key: propertyName, ascending: true, selector: #selector(NSString.caseInsensitiveCompare))
@@ -89,7 +89,7 @@ final class StencilTemplate: StencilSwiftKit.StencilSwiftTemplate, SourceryFrame
             }
         }
 
-        ext.registerFilterWithArguments("sortedDescending") { (array, propertyName: String) -> Any? in
+        ext.registerFilterWithArgument("sortedDescending") { (array, propertyName: String) -> Any? in
             switch array {
             case let array as NSArray:
                 let sortDescriptor = NSSortDescriptor(key: propertyName, ascending: false, selector: #selector(NSString.caseInsensitiveCompare))
@@ -155,6 +155,16 @@ extension Stencil.Extension {
 
         let capitalise = FilterOr<String, TypeName>.make({ $0.capitalized }, other: { $0.name.capitalized })
         registerFilter("capitalise", filter: capitalise)
+
+        let dropFirst = Filter<String>.make { (string, count: Int) -> String? in
+            String(string.dropFirst(count))
+        }
+        registerFilterWithOptionalArgument("dropFirst", defaultArgument: 1, filter: dropFirst)
+
+        let dropLast = Filter<String>.make { (string, count: Int) -> String? in
+            String(string.dropLast(count))
+        }
+        registerFilterWithOptionalArgument("dropLast", defaultArgument: 1, filter: dropLast)
     }
 
     func registerFilterWithTwoArguments<T, A, B>(_ name: String, filter: @escaping (T, A, B) throws -> Any?) {
@@ -182,7 +192,33 @@ extension Stencil.Extension {
         }
     }
 
-    func registerFilterWithArguments<A>(_ name: String, filter: @escaping (Any?, A) throws -> Any?) {
+    func registerFilterWithArgument<A>(_ name: String, filter: @escaping (Any?, A) throws -> Any?) {
+        registerFilter(name) { (any: Any?, args: [Any?]) throws -> Any? in
+            guard args.count == 1, let arg = args.first as? A else {
+                throw TemplateSyntaxError("'\(name)' filter takes a single \(A.self) argument")
+            }
+            return try filter(any, arg)
+        }
+    }
+
+    func registerFilterWithOptionalArgument<A>(_ name: String, defaultArgument: A, filter: @escaping (Any?, A) throws -> Any?) {
+        registerFilter(name) { (any: Any?, args: [Any?]) throws -> Any? in
+            let arg: A
+            if args.isEmpty {
+                arg = defaultArgument
+            } else if args.count == 1 {
+                guard let _arg = args.first as? A else {
+                    throw TemplateSyntaxError("'\(name)' filter takes a single \(A.self) argument")
+                }
+                arg = _arg
+            } else {
+                throw TemplateSyntaxError("'\(name)' filter takes a single \(A.self) argument")
+            }
+            return try filter(any, arg)
+        }
+    }
+
+    func registerFilterWithOptionalArguments<A>(_ name: String, filter: @escaping (Any?, A) throws -> Any?) {
         registerFilter(name) { (any: Any?, args: [Any?]) throws -> Any? in
             guard args.count == 1, let arg = args.first as? A else {
                 throw TemplateSyntaxError("'\(name)' filter takes a single \(A.self) argument")
@@ -192,8 +228,8 @@ extension Stencil.Extension {
     }
 
     func registerBoolFilterWithArguments<U, A>(_ name: String, filter: @escaping (U, A) -> Bool) {
-        registerFilterWithArguments(name, filter: Filter.make(filter))
-        registerFilterWithArguments("!\(name)", filter: Filter.make({ !filter($0, $1) }))
+        registerFilterWithArgument(name, filter: Filter.make(filter))
+        registerFilterWithArgument("!\(name)", filter: Filter.make({ !filter($0, $1) }))
     }
 
     func registerBoolFilter<U>(_ name: String, filter: @escaping (U) -> Bool) {
@@ -202,8 +238,8 @@ extension Stencil.Extension {
     }
 
     func registerBoolFilterOrWithArguments<U, V, A>(_ name: String, filter: @escaping (U, A) -> Bool, other: @escaping (V, A) -> Bool) {
-        registerFilterWithArguments(name, filter: FilterOr.make(filter, other: other))
-        registerFilterWithArguments("!\(name)", filter: FilterOr.make({ !filter($0, $1) }, other: { !other($0, $1) }))
+        registerFilterWithArgument(name, filter: FilterOr.make(filter, other: other))
+        registerFilterWithArgument("!\(name)", filter: FilterOr.make({ !filter($0, $1) }, other: { !other($0, $1) }))
     }
 
     func registerBoolFilterOr<U, V>(_ name: String, filter: @escaping (U) -> Bool, other: @escaping (V) -> Bool) {
@@ -285,6 +321,21 @@ private struct Filter<T> {
 
             case let array as NSArray:
                 return array.compactMap { $0 as? T }.compactMap(filter)
+
+            default:
+                return any
+            }
+        }
+    }
+
+    static func make<U, A>(_ filter: @escaping (T, A) -> U?) -> (Any?, A) throws -> Any? {
+        return { (any, arg) throws -> Any? in
+            switch any {
+            case let type as T:
+                return filter(type, arg)
+
+            case let array as NSArray:
+                return array.compactMap { $0 as? T }.compactMap { filter($0, arg) }
 
             default:
                 return any

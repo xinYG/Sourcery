@@ -1,5 +1,5 @@
 # Xcode
-- task: WhiteSource@20
+- task: WhiteSource@21
   inputs:
     cwd: '$(System.DefaultWorkingDirectory)'
 # Build, test, and archive an Xcode workspace on macOS.
